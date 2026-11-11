@@ -56,11 +56,8 @@ export default function Home() {
     <Screen header={<AppHeader />} tabBarSpace refreshing={isRefetching} onRefresh={refetch} contentStyle={{ paddingHorizontal: 0 }}>
       <View style={styles.hero}>
         <View style={{ flex: 1, paddingLeft: 20, zIndex: 1 }}>
-          <Text style={[type.display, { fontSize: 32, lineHeight: 38 }]}>We Are</Text>
-          <Text style={[type.display, { fontSize: 32, lineHeight: 38, color: colors.teal }]}>Drive Me Go.</Text>
-          <Text style={[type.small, { marginTop: 8, color: colors.navySoft }]} numberOfLines={4}>
-            Opening new possibilities — freedom to go anywhere, every day.
-          </Text>
+          <Text style={[type.display, { fontSize: 28, lineHeight: 34 }]}>We Are</Text>
+          <Text style={[type.display, { fontSize: 28, lineHeight: 34, color: colors.teal }]}>Drive Me Go.</Text>
         </View>
         <Image source={require("../../../assets/images/hero-bus.png")} style={styles.heroBus} contentFit="cover" />
       </View>
@@ -72,7 +69,6 @@ export default function Home() {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={type.h2}>Find your daily commute</Text>
-            <Text style={type.small}>Set your route and days to match verified rides.</Text>
           </View>
         </View>
 
@@ -88,23 +84,15 @@ export default function Home() {
           <Ionicons name="chevron-down" size={18} color={colors.navySoft} />
         </Pressable>
 
-        <View style={styles.perks}>
-          {["Verified providers", "Fixed monthly pass"].map((p) => (
-            <View key={p} style={styles.perk}>
-              <Ionicons name="checkmark-circle" size={15} color={colors.teal} />
-              <Text style={styles.perkText}>{p}</Text>
-            </View>
-          ))}
+        <View style={{ marginTop: 6 }}>
+          <Button title="Search Commutes" icon="search" onPress={search} />
         </View>
-
-        <Button title="Search Commutes" icon="search" onPress={search} />
       </View>
 
       <View style={{ paddingHorizontal: 20, marginTop: 28 }}>
         <SectionTitle
           icon="star"
           title="Featured Routes"
-          subtitle="Curated commutes with verified providers"
           right={
             <Pressable onPress={() => router.push("/search")} hitSlop={8}>
               <Text style={{ color: colors.teal, fontWeight: "700" }}>View All</Text>
@@ -151,7 +139,7 @@ function LocationInput({ label, ...props }) {
 }
 
 const styles = StyleSheet.create({
-  hero: { flexDirection: "row", alignItems: "center", minHeight: 190, marginBottom: 6, overflow: "hidden" },
+  hero: { flexDirection: "row", alignItems: "center", minHeight: 140, marginBottom: 4, overflow: "hidden" },
   heroBus: { position: "absolute", right: -30, top: 0, bottom: 0, width: "62%", opacity: 0.95 },
   searchCard: { marginHorizontal: 20, backgroundColor: "#fff", borderRadius: radius.xl, padding: 16, borderWidth: 1, borderColor: colors.border },
   searchHead: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 },
@@ -169,9 +157,6 @@ const styles = StyleSheet.create({
   },
   inputLabel: { fontSize: 11, color: colors.muted, fontWeight: "600" },
   inputValue: { fontSize: 15, fontWeight: "600", color: colors.navy, paddingVertical: 2 },
-  perks: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginVertical: 8 },
-  perk: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: radius.pill, backgroundColor: colors.tealSoft },
-  perkText: { fontSize: 12, fontWeight: "600", color: colors.tealDark },
   backdrop: { flex: 1, backgroundColor: colors.overlay },
   sheet: { backgroundColor: "#fff", borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 20, paddingBottom: 32 },
   dayWrap: { flexDirection: "row", flexWrap: "wrap", gap: 10 },

@@ -101,29 +101,28 @@ export default function MoreTab() {
       </Card>
 
       <Card style={styles.group}>
-        <Row icon="time-outline" title="Travel History" sub="View your past trips and ride details" onPress={() => router.push("/travel-history")} />
-        <Row icon="ribbon-outline" title="Subscriptions" sub="Manage your plan, payment and auto-renewal" onPress={() => router.push("/subscriptions")} />
-        <Row icon="chatbox-ellipses-outline" title="Route Requests" sub="Track the routes you have requested" onPress={() => router.push("/route-requests")} />
-        <Row icon="close-circle-outline" title="Cancel Booking" sub="Manage your booking cancellations" onPress={() => router.push("/(tabs)/trips")} />
-        <Row icon="notifications-outline" title="Alerts" sub="Your notifications" onPress={() => router.push("/notifications")} />
-        <Row icon="settings-outline" title="Settings" sub="Preferences, notifications and security" onPress={() => router.push("/settings")} last />
+        <Row icon="time-outline" title="Travel History" onPress={() => router.push("/travel-history")} />
+        <Row icon="ribbon-outline" title="Subscriptions" onPress={() => router.push("/subscriptions")} />
+        <Row icon="chatbox-ellipses-outline" title="Route Requests" onPress={() => router.push("/route-requests")} />
+        <Row icon="notifications-outline" title="Notifications" onPress={() => router.push("/notifications")} />
+        <Row icon="settings-outline" title="Settings" onPress={() => router.push("/settings")} last />
       </Card>
 
       <Card style={styles.group}>
-        <Row icon="person-add-outline" title="Refer a Friend" sub="Get rewards for every referral" onPress={() => router.push("/refer")} />
-        <Row icon="shield-checkmark-outline" title="Secure your trip" sub="Travel protection and flexible cancellation" onPress={() => router.push("/secure-trip")} />
-        <Row icon="call-outline" title="Emergency Contacts" sub="Instant alerts for your saved contacts" onPress={() => router.push("/emergency-contacts")} />
-        <Row icon="newspaper-outline" title="News & Blog" sub="Latest updates and travel tips" onPress={() => router.push("/news")} />
-        <Row icon="trophy-outline" title="Contests" sub="Win exciting rewards" onPress={() => router.push("/contests")} />
-        <Row icon="create-outline" title="Write Feedback" sub="Help us serve you better" onPress={() => router.push("/feedback")} />
-        <Row icon="help-circle-outline" title="FAQs" sub="Find answers to common questions" onPress={() => router.push("/faqs")} last />
+        <Row icon="person-add-outline" title="Refer a Friend" onPress={() => router.push("/refer")} />
+        <Row icon="shield-checkmark-outline" title="Secure your trip" onPress={() => router.push("/secure-trip")} />
+        <Row icon="call-outline" title="Emergency Contacts" onPress={() => router.push("/emergency-contacts")} />
+        <Row icon="newspaper-outline" title="News & Blog" onPress={() => router.push("/news")} />
+        <Row icon="trophy-outline" title="Contests" onPress={() => router.push("/contests")} />
+        <Row icon="create-outline" title="Write Feedback" onPress={() => router.push("/feedback")} />
+        <Row icon="help-circle-outline" title="FAQs" onPress={() => router.push("/faqs")} last />
       </Card>
 
       <Card style={styles.group}>
-        <Row icon="document-text-outline" title="Terms & Conditions" sub="Read our terms and conditions" onPress={() => router.push("/page/terms-and-conditions")} />
-        <Row icon="shield-checkmark-outline" title="Privacy Policy" sub="Your data, our priority" onPress={() => router.push("/page/privacy-policy")} />
-        <Row icon="information-circle-outline" title="About Us" sub="Know more about DriveMeGo" onPress={() => router.push("/page/about-us")} />
-        <Row icon="mail-outline" title="Contact Us" sub="Get in touch with our support team" onPress={() => router.push("/page/contact-us")} last />
+        <Row icon="document-text-outline" title="Terms & Conditions" onPress={() => router.push("/page/terms-and-conditions")} />
+        <Row icon="shield-checkmark-outline" title="Privacy Policy" onPress={() => router.push("/page/privacy-policy")} />
+        <Row icon="information-circle-outline" title="About Us" onPress={() => router.push("/page/about-us")} />
+        <Row icon="mail-outline" title="Contact Us" onPress={() => router.push("/page/contact-us")} last />
       </Card>
 
       <Card style={styles.group}>

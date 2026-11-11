@@ -76,14 +76,7 @@ export default function Wallet() {
 
   return (
     <Screen header={<AppHeader />} tabBarSpace refreshing={bal.isRefetching || tx.isRefetching} onRefresh={refresh}>
-      <LinearGradient colors={gradients.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.banner}>
-        <View style={styles.bannerIcon}><Ionicons name="wallet" size={26} color="#fff" /></View>
-        <View style={{ flex: 1 }}>
-          <Text style={[type.caption, { color: "rgba(255,255,255,0.8)" }]}>Your money, sorted</Text>
-          <Text style={[type.h1, { color: "#fff" }]}>My Wallet</Text>
-          <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: 13 }}>Top up and pay for every ride in a tap.</Text>
-        </View>
-      </LinearGradient>
+      <Text style={[type.h1, { marginBottom: 14 }]}>Wallet</Text>
 
       <Card>
         <Pressable onPress={() => setHidden((h) => !h)} style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
@@ -91,11 +84,7 @@ export default function Wallet() {
           <Ionicons name={hidden ? "eye-off-outline" : "eye-outline"} size={18} color={colors.info} />
         </Pressable>
         {bal.isLoading ? <Loading /> : <Text style={styles.balance}>{hidden ? "••••••" : formatMoney(balance, currency)}</Text>}
-        <View style={{ flexDirection: "row", gap: 10, marginVertical: 14 }}>
-          <Stat icon="time-outline" label="Transactions" value={String(list.length)} />
-          <Stat icon="wallet-outline" label="Total Spent" value={formatMoney(totalSpent, currency)} />
-        </View>
-        <View style={{ flexDirection: "row", gap: 10 }}>
+        <View style={{ flexDirection: "row", gap: 10, marginTop: 14 }}>
           <View style={{ flex: 1 }}><Button title="Add Funds" icon="add" onPress={() => setOpen(true)} /></View>
           <View style={{ flex: 1 }}>
             <Button title="Withdraw" icon="arrow-up" variant="outline" disabled={balance <= 0} onPress={() => setWithdrawOpen(true)} />

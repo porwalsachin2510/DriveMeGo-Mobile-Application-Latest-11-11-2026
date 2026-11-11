@@ -36,6 +36,11 @@ export default function Notifications() {
 
   if (ready && !isAuthenticated) return <Redirect href="/(auth)/login" />;
 
+  const openNotification = (n, isRead) => {
+    if (!isRead) markRead.mutate(n._id);
+    if (n.data?.slug) router.push({ pathname: "/article/[slug]", params: { slug: n.data.slug } });
+  };
+
   const items = list.data?.notifications || [];
   const unread = items.filter((n) => !(n.isRead ?? n.read)).length;
 
@@ -61,7 +66,7 @@ export default function Notifications() {
         items.map((n) => {
           const isRead = n.isRead ?? n.read;
           return (
-            <Pressable key={n._id} onPress={() => !isRead && markRead.mutate(n._id)} onLongPress={() => Alert.alert("Delete notification?", "", [{ text: "Cancel", style: "cancel" }, { text: "Delete", style: "destructive", onPress: () => remove.mutate(n._id) }])}>
+            <Pressable key={n._id} onPress={() => openNotification(n, isRead)} onLongPress={() => Alert.alert("Delete notification?", "", [{ text: "Cancel", style: "cancel" }, { text: "Delete", style: "destructive", onPress: () => remove.mutate(n._id) }])}>
               <Card style={[styles.item, !isRead && styles.unread]}>
                 <View style={styles.icon}>
                   <Ionicons name="notifications-outline" size={18} color={colors.tealDark} />

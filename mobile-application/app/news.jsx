@@ -1,12 +1,13 @@
 import { useCallback, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { SubScreen, errorMessage } from "../src/components/SubScreen";
-import { Badge, Button, Card, Chip, EmptyState, Loading } from "../src/components/ui";
+import { Button, Chip, EmptyState, Loading } from "../src/components/ui";
 import { engagementService } from "../src/services";
-import { formatDateLong } from "../src/utils/format";
-import { colors, radius } from "../src/theme";
+import { formatDate } from "../src/utils/format";
+import { colors, radius, shadow } from "../src/theme";
 
 const TABS = [
   { key: "", label: "All" },
@@ -14,7 +15,10 @@ const TABS = [
   { key: "BLOG", label: "Blog" },
 ];
 
+const typeLabel = (t) => (t === "NEWS" ? "News" : "Blog");
+
 export default function NewsScreen() {
+  const router = useRouter();
   const [type, setType] = useState("");
   const [items, setItems] = useState([]);
   const [page, setPage] = useState(1);
@@ -23,9 +27,6 @@ export default function NewsScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
-  const [openSlug, setOpenSlug] = useState(null);
-  const [bodies, setBodies] = useState({});
-  const [loadingBody, setLoadingBody] = useState(null);
 
   const load = useCallback(
     async ({ nextPage = 1, nextType = type, refresh = false } = {}) => {
@@ -56,23 +57,11 @@ export default function NewsScreen() {
     }, [load])
   );
 
-  const toggle = async (post) => {
-    if (openSlug === post.slug) return setOpenSlug(null);
-    setOpenSlug(post.slug);
-    if (bodies[post.slug]) return;
-    setLoadingBody(post.slug);
-    try {
-      const res = await engagementService.post(post.slug);
-      setBodies((prev) => ({ ...prev, [post.slug]: res?.data?.post?.content || "" }));
-    } catch (e) {
-      setBodies((prev) => ({ ...prev, [post.slug]: errorMessage(e, "Could not load this article.") }));
-    } finally {
-      setLoadingBody(null);
-    }
-  };
+  const open = (post) => router.push({ pathname: "/article/[slug]", params: { slug: post.slug } });
+  const [lead, ...rest] = items;
 
   return (
-    <SubScreen eyebrow="Updates" title="News & Blog" subtitle="Latest updates and travel tips." icon="newspaper-outline" refreshing={refreshing} onRefresh={() => load({ refresh: true })}>
+    <SubScreen title="News & Blog" refreshing={refreshing} onRefresh={() => load({ refresh: true })}>
       <View style={styles.tabs}>
         {TABS.map((t) => (
           <Chip
@@ -88,45 +77,51 @@ export default function NewsScreen() {
       </View>
 
       {loading ? (
-        <Loading label="Loading articles..." />
+        <Loading />
       ) : error ? (
         <EmptyState icon="alert-circle-outline" title="Something went wrong" message={error} action={<Button title="Try again" onPress={() => load({ nextPage: 1 })} />} />
-      ) : items.length === 0 ? (
+      ) : !items.length ? (
         <EmptyState icon="newspaper-outline" title="Nothing published yet" message="Check back soon for news and travel tips." />
       ) : (
-        <View style={{ gap: 14 }}>
-          {items.map((p) => {
-            const open = openSlug === p.slug;
-            return (
-              <Card key={p._id} style={{ overflow: "hidden" }}>
-                <Pressable onPress={() => toggle(p)} accessibilityRole="button" accessibilityState={{ expanded: open }}>
-                  {p.coverImage ? <Image source={{ uri: p.coverImage }} style={styles.cover} contentFit="cover" /> : null}
-                  <View style={{ padding: 16 }}>
-                    <View style={styles.meta}>
-                      <Badge label={p.type === "NEWS" ? "News" : "Blog"} tone={p.type === "NEWS" ? "teal" : "warning"} />
-                      <Text style={styles.date}>{formatDateLong(p.publishedAt)}</Text>
-                    </View>
-                    <Text style={styles.title}>{p.title}</Text>
-                    {!open && p.excerpt ? (
-                      <Text style={styles.excerpt} numberOfLines={2}>
-                        {p.excerpt}
-                      </Text>
-                    ) : null}
-                    {open ? (
-                      loadingBody === p.slug ? (
-                        <ActivityIndicator color={colors.teal} style={{ marginTop: 14 }} />
-                      ) : (
-                        <Text style={styles.body}>{bodies[p.slug]}</Text>
-                      )
-                    ) : (
-                      <Text style={styles.more}>Read more</Text>
-                    )}
-                  </View>
-                </Pressable>
-              </Card>
-            );
-          })}
-          {hasMore ? <Button title="Load more" variant="outline" icon="chevron-down" loading={loadingMore} onPress={() => load({ nextPage: page + 1 })} /> : null}
+        <View style={{ gap: 12 }}>
+          <Pressable onPress={() => open(lead)} accessibilityRole="button" style={[styles.lead, shadow]}>
+            {lead.coverImage ? <Image source={{ uri: lead.coverImage }} style={styles.leadCover} contentFit="cover" /> : null}
+            <View style={styles.leadBody}>
+              <Text style={styles.meta}>
+                {typeLabel(lead.type)} · {formatDate(lead.publishedAt)}
+              </Text>
+              <Text style={styles.leadTitle} numberOfLines={3}>
+                {lead.title}
+              </Text>
+              {lead.excerpt ? (
+                <Text style={styles.excerpt} numberOfLines={2}>
+                  {lead.excerpt}
+                </Text>
+              ) : null}
+            </View>
+          </Pressable>
+
+          {rest.map((p) => (
+            <Pressable key={p._id} onPress={() => open(p)} accessibilityRole="button" style={[styles.row, shadow]}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.meta}>
+                  {typeLabel(p.type)} · {formatDate(p.publishedAt)}
+                </Text>
+                <Text style={styles.rowTitle} numberOfLines={3}>
+                  {p.title}
+                </Text>
+              </View>
+              {p.coverImage ? (
+                <Image source={{ uri: p.coverImage }} style={styles.thumb} contentFit="cover" />
+              ) : (
+                <View style={[styles.thumb, styles.thumbEmpty]}>
+                  <Ionicons name="newspaper-outline" size={22} color={colors.tealDark} />
+                </View>
+              )}
+            </Pressable>
+          ))}
+
+          {hasMore ? <Button title="Load more" variant="outline" loading={loadingMore} onPress={() => load({ nextPage: page + 1 })} /> : null}
         </View>
       )}
     </SubScreen>
@@ -134,12 +129,15 @@ export default function NewsScreen() {
 }
 
 const styles = StyleSheet.create({
-  tabs: { flexDirection: "row", gap: 8, marginBottom: 14 },
-  cover: { width: "100%", height: 150, backgroundColor: colors.tealSoft },
-  meta: { flexDirection: "row", alignItems: "center", gap: 10 },
-  date: { fontSize: 12, color: colors.muted },
-  title: { fontSize: 17, fontWeight: "800", color: colors.navy, marginTop: 10 },
-  excerpt: { fontSize: 13.5, color: colors.muted, marginTop: 6, lineHeight: 19 },
-  body: { fontSize: 14.5, color: colors.navy, marginTop: 12, lineHeight: 22 },
-  more: { fontSize: 13, fontWeight: "800", color: colors.tealDark, marginTop: 10, borderRadius: radius.pill },
+  tabs: { flexDirection: "row", gap: 8, marginBottom: 16 },
+  lead: { backgroundColor: colors.card, borderRadius: radius.xl, overflow: "hidden", borderWidth: 1, borderColor: colors.border },
+  leadCover: { width: "100%", height: 170, backgroundColor: colors.tealSoft },
+  leadBody: { padding: 16, gap: 6 },
+  leadTitle: { fontSize: 19, fontWeight: "800", color: colors.navy, lineHeight: 25 },
+  excerpt: { fontSize: 14, color: colors.muted, lineHeight: 20 },
+  meta: { fontSize: 12, fontWeight: "700", color: colors.tealDark },
+  row: { flexDirection: "row", alignItems: "center", gap: 14, padding: 14, backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border },
+  rowTitle: { fontSize: 15.5, fontWeight: "800", color: colors.navy, lineHeight: 21, marginTop: 4 },
+  thumb: { width: 76, height: 76, borderRadius: radius.md, backgroundColor: colors.tealSoft },
+  thumbEmpty: { alignItems: "center", justifyContent: "center" },
 });
