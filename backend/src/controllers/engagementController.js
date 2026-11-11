@@ -11,6 +11,8 @@ import TripProtection from "../models/TripProtection.js"
 import B2CPassengerBooking from "../models/B2CPassengerBooking.js"
 import { COUNTRY_CONFIG, COUNTRY_LOCATIONS } from "../Config/localizationConfig.js"
 import { debitWallet, resolveUserWalletRole } from "../Services/walletService.js"
+import { createNotification } from "../Services/notificationService.js"
+import { uploadToCloudinary } from "../Config/Cloudinary.js"
 
 const MAX_EMERGENCY_CONTACTS = 5
 const PHONE_RULE = /^[+]?[\d\s\-()]{7,16}$/
@@ -248,6 +250,16 @@ export const listFaqs = async (req, res) => {
     }
 }
 
+export const adminListFaqs = async (req, res) => {
+    try {
+        const faqs = await Faq.find({}).sort({ category: 1, order: 1, createdAt: 1 }).lean()
+        const categories = [...new Set(faqs.map((f) => f.category).filter(Boolean))].sort()
+        res.json({ success: true, data: { faqs, categories } })
+    } catch (error) {
+        serverError(res, "adminListFaqs", error)
+    }
+}
+
 export const adminCreateFaq = async (req, res) => {
     try {
         const faq = await Faq.create(req.body)
@@ -320,12 +332,67 @@ export const getPost = async (req, res) => {
     }
 }
 
+const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+
+export const adminListPosts = async (req, res) => {
+    try {
+        const { page, limit, skip } = pageParams(req.query, 15)
+        const filter = {}
+        const type = String(req.query.type || "").toUpperCase()
+        if (type === "NEWS" || type === "BLOG") filter.type = type
+        const status = String(req.query.status || "").toLowerCase()
+        if (status === "published") filter.isPublished = true
+        if (status === "draft") filter.isPublished = false
+        if (req.query.q) {
+            const rx = new RegExp(escapeRegex(req.query.q), "i")
+            filter.$or = [{ title: rx }, { excerpt: rx }, { tags: rx }]
+        }
+        const [items, total] = await Promise.all([
+            BlogPost.find(filter).select("-content").sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+            BlogPost.countDocuments(filter),
+        ])
+        res.json({ success: true, data: { items, total, page, limit, hasMore: skip + items.length < total } })
+    } catch (error) {
+        serverError(res, "adminListPosts", error)
+    }
+}
+
+export const adminGetPost = async (req, res) => {
+    try {
+        if (!isId(req.params.id)) return fail(res, 400, "Invalid article id")
+        const post = await BlogPost.findById(req.params.id).lean()
+        if (!post) return fail(res, 404, "Article not found")
+        res.json({ success: true, data: { post } })
+    } catch (error) {
+        serverError(res, "adminGetPost", error)
+    }
+}
+
+// Fan a newly published article out to commuters as an in-app notification.
+const notifyCommutersOfPost = async (post) => {
+    const commuters = await User.find({ role: "COMMUTER", isActive: { $ne: false } }).select("_id").limit(5000).lean()
+    await Promise.allSettled(
+        commuters.map((u) =>
+            createNotification({
+                userId: u._id,
+                type: post.type === "NEWS" ? "NEWS_PUBLISHED" : "BLOG_PUBLISHED",
+                title: post.type === "NEWS" ? "Latest news" : "New on the blog",
+                message: post.title,
+                data: { postId: String(post._id), slug: post.slug },
+            }),
+        ),
+    )
+}
+
 export const adminCreatePost = async (req, res) => {
     try {
-        const body = { ...req.body }
+        const { notifyUsers, ...body } = req.body || {}
         if (!body.title) return fail(res, 400, "Title is required")
         body.slug = body.slug ? slugify(body.slug) : `${slugify(body.title)}-${Date.now().toString(36)}`
         const post = await BlogPost.create(body)
+        if (notifyUsers && post.isPublished && post.publishedAt <= new Date()) {
+            notifyCommutersOfPost(post).catch((e) => console.error("[engagement] notify failed:", e))
+        }
         res.status(201).json({ success: true, data: { post } })
     } catch (error) {
         if (error?.name === "ValidationError") return fail(res, 400, error.message)
@@ -337,8 +404,13 @@ export const adminCreatePost = async (req, res) => {
 export const adminUpdatePost = async (req, res) => {
     try {
         if (!isId(req.params.id)) return fail(res, 400, "Invalid article id")
-        const post = await BlogPost.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true, runValidators: true })
+        const { notifyUsers, ...changes } = req.body || {}
+        const before = await BlogPost.findById(req.params.id).select("isPublished").lean()
+        const post = await BlogPost.findByIdAndUpdate(req.params.id, { $set: changes }, { new: true, runValidators: true })
         if (!post) return fail(res, 404, "Article not found")
+        if (notifyUsers && post.isPublished && !before?.isPublished) {
+            notifyCommutersOfPost(post).catch((e) => console.error("[engagement] notify failed:", e))
+        }
         res.json({ success: true, data: { post } })
     } catch (error) {
         if (error?.name === "ValidationError") return fail(res, 400, error.message)
@@ -413,6 +485,53 @@ export const joinContest = async (req, res) => {
     }
 }
 
+export const adminListContests = async (req, res) => {
+    try {
+        const contests = await Contest.find({}).sort({ endsAt: -1 }).limit(200).lean()
+        const ids = contests.map((c) => c._id)
+        const counts = await ContestEntry.aggregate([
+            { $match: { contest: { $in: ids } } },
+            { $group: { _id: "$contest", n: { $sum: 1 }, winners: { $sum: { $cond: [{ $eq: ["$status", "WINNER"] }, 1, 0] } } } },
+        ])
+        const byContest = new Map(counts.map((c) => [String(c._id), c]))
+        const items = contests.map((c) => ({
+            ...c,
+            phase: contestPhase(c),
+            entries: byContest.get(String(c._id))?.n || 0,
+            winnersPicked: byContest.get(String(c._id))?.winners || 0,
+        }))
+        res.json({ success: true, data: { items } })
+    } catch (error) {
+        serverError(res, "adminListContests", error)
+    }
+}
+
+export const adminContestEntries = async (req, res) => {
+    try {
+        if (!isId(req.params.id)) return fail(res, 400, "Invalid contest id")
+        const entries = await ContestEntry.find({ contest: req.params.id })
+            .populate("user", "fullName email phone")
+            .sort({ status: -1, createdAt: -1 })
+            .limit(1000)
+            .lean()
+        res.json({ success: true, data: { entries } })
+    } catch (error) {
+        serverError(res, "adminContestEntries", error)
+    }
+}
+
+export const adminDeleteContest = async (req, res) => {
+    try {
+        if (!isId(req.params.id)) return fail(res, 400, "Invalid contest id")
+        const contest = await Contest.findByIdAndDelete(req.params.id)
+        if (!contest) return fail(res, 404, "Contest not found")
+        await ContestEntry.deleteMany({ contest: contest._id })
+        res.json({ success: true, message: "Contest deleted" })
+    } catch (error) {
+        serverError(res, "adminDeleteContest", error)
+    }
+}
+
 export const adminCreateContest = async (req, res) => {
     try {
         const contest = await Contest.create(req.body)
@@ -452,6 +571,23 @@ export const adminPickContestWinners = async (req, res) => {
         res.json({ success: true, data: { winners: winners.map((w) => w.user) } })
     } catch (error) {
         serverError(res, "adminPickContestWinners", error)
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/* Cover image upload (admin)                                          */
+/* ------------------------------------------------------------------ */
+
+export const adminUploadCover = async (req, res) => {
+    try {
+        if (!req.file) return fail(res, 400, "Choose an image to upload")
+        if (!req.file.mimetype?.startsWith("image/")) return fail(res, 400, "Only image files are allowed")
+        const uploaded = await uploadToCloudinary(req.file, "driveme/engagement", "cover")
+        const url = uploaded?.secure_url || uploaded?.url
+        if (!url) return fail(res, 502, "Image upload failed. Please try again.")
+        res.status(201).json({ success: true, data: { url } })
+    } catch (error) {
+        serverError(res, "adminUploadCover", error)
     }
 }
 

@@ -1,4 +1,5 @@
 import express from "express"
+import { upload } from "../Config/multerConfig.js"
 import { verifyToken, checkAdminRole } from "../middleware/auth.js"
 import {
     getCityPreference,
@@ -12,16 +13,23 @@ import {
     adminListFeedback,
     adminRespondFeedback,
     listFaqs,
+    adminListFaqs,
     adminCreateFaq,
     adminUpdateFaq,
     adminDeleteFaq,
     listPosts,
     getPost,
+    adminListPosts,
+    adminGetPost,
     adminCreatePost,
     adminUpdatePost,
     adminDeletePost,
     listContests,
     joinContest,
+    adminListContests,
+    adminContestEntries,
+    adminDeleteContest,
+    adminUploadCover,
     adminCreateContest,
     adminUpdateContest,
     adminPickContestWinners,
@@ -40,6 +48,9 @@ const router = express.Router()
 router.get("/city", verifyToken, getCityPreference)
 router.put("/city", verifyToken, setCityPreference)
 
+// Admin cover image upload
+router.post("/admin/upload-cover", verifyToken, checkAdminRole, upload.single("image"), adminUploadCover)
+
 // Emergency contacts
 router.get("/emergency-contacts", verifyToken, listEmergencyContacts)
 router.post("/emergency-contacts", verifyToken, createEmergencyContact)
@@ -54,12 +65,15 @@ router.put("/feedback/admin/:id", verifyToken, checkAdminRole, adminRespondFeedb
 
 // FAQs
 router.get("/faqs", verifyToken, listFaqs)
+router.get("/faqs/admin/all", verifyToken, checkAdminRole, adminListFaqs)
 router.post("/faqs", verifyToken, checkAdminRole, adminCreateFaq)
 router.put("/faqs/:id", verifyToken, checkAdminRole, adminUpdateFaq)
 router.delete("/faqs/:id", verifyToken, checkAdminRole, adminDeleteFaq)
 
 // News & blog
 router.get("/posts", verifyToken, listPosts)
+router.get("/posts/admin/all", verifyToken, checkAdminRole, adminListPosts)
+router.get("/posts/admin/:id", verifyToken, checkAdminRole, adminGetPost)
 router.get("/posts/:idOrSlug", verifyToken, getPost)
 router.post("/posts", verifyToken, checkAdminRole, adminCreatePost)
 router.put("/posts/:id", verifyToken, checkAdminRole, adminUpdatePost)
@@ -67,6 +81,9 @@ router.delete("/posts/:id", verifyToken, checkAdminRole, adminDeletePost)
 
 // Contests
 router.get("/contests", verifyToken, listContests)
+router.get("/contests/admin/all", verifyToken, checkAdminRole, adminListContests)
+router.get("/contests/:id/entries", verifyToken, checkAdminRole, adminContestEntries)
+router.delete("/contests/:id", verifyToken, checkAdminRole, adminDeleteContest)
 router.post("/contests", verifyToken, checkAdminRole, adminCreateContest)
 router.put("/contests/:id", verifyToken, checkAdminRole, adminUpdateContest)
 router.post("/contests/:id/join", verifyToken, joinContest)
