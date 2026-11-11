@@ -69,7 +69,7 @@ export default function PartnerBookings() {
 
   return (
     <Screen header={<PartnerHeader />} tabBarSpace refreshing={q.isRefetching} onRefresh={q.refetch}>
-      <Text style={[type.h1, { marginBottom: 12 }]}>Booking Management</Text>
+      <Text style={[type.h1, { marginBottom: 12 }]}>Bookings</Text>
       <SegTabs
         tabs={[
           { key: "all", label: "All Bookings", icon: "calendar-outline" },
@@ -96,34 +96,21 @@ export default function PartnerBookings() {
           return (
             <Card key={b._id} style={styles.card}>
               <View style={styles.rowBetween}>
-                <View style={styles.idPill}>
-                  <Text style={styles.idText}>#{String(b.bookingId || b._id).slice(-8).toLowerCase()}</Text>
-                </View>
+                <Text style={[type.h3, { flex: 1 }]} numberOfLines={1}>
+                  {b.passengerName}
+                </Text>
                 <Badge label={meta.label} tone={meta.tone} />
               </View>
-              <View style={styles.row}>
-                <Ionicons name="person" size={18} color={colors.navy} />
-                <View style={{ flex: 1 }}>
-                  <Text style={type.h3} numberOfLines={1}>
-                    {b.passengerName}
-                  </Text>
-                  {b.passengerPhone ? <Text style={type.small}>{b.passengerPhone}</Text> : null}
-                </View>
-              </View>
-              <View style={styles.row}>
-                <Ionicons name="location" size={18} color={colors.teal} />
-                <Text style={[type.body, { flex: 1, fontWeight: "600" }]} numberOfLines={2}>
-                  {b.pickup} {"\u2192"} <Text style={{ color: colors.danger }}>{b.dropoff}</Text>
-                </Text>
-              </View>
-              <View style={styles.meta}>
-                <Meta icon="car-outline" label="Driver" value={b.driverName} />
-                <Meta icon="people-outline" label="Seats" value={String(b.numberOfSeats)} />
-                <Meta icon="wallet-outline" label="Amount" value={formatMoney(b.amount, b.currency)} accent />
-              </View>
-              <Text style={[type.small, { marginTop: 8 }]}>
-                {formatDateTime(b.date)} {b.isMonthlyPass ? "\u00B7 Monthly Pass" : ""}
+              <Text style={[type.body, { fontWeight: "600", marginTop: 6 }]} numberOfLines={1}>
+                {b.pickup} {"\u2192"} {b.dropoff}
               </Text>
+              <View style={[styles.rowBetween, { marginTop: 8 }]}>
+                <Text style={type.small} numberOfLines={1}>
+                  {formatDateTime(b.date)} {"\u00B7"} {b.numberOfSeats} seat{Number(b.numberOfSeats) === 1 ? "" : "s"}
+                  {b.isMonthlyPass ? " \u00B7 Pass" : ""}
+                </Text>
+                <Text style={{ fontWeight: "800", color: colors.tealDark }}>{formatMoney(b.amount, b.currency)}</Text>
+              </View>
               {pending ? (
                 <View style={[styles.row, { marginTop: 12, gap: 10 }]}>
                   <Button title="Reject" variant="outline" small icon="close" onPress={() => confirm(b._id, "REJECTED")} style={{ flex: 1 }} />

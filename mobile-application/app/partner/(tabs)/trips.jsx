@@ -38,13 +38,12 @@ export default function PartnerTrips() {
 
   return (
     <Screen header={<PartnerHeader />} tabBarSpace refreshing={q.isRefetching} onRefresh={() => { q.refetch(); todayQ.refetch(); }}>
-      <Text style={type.h1}>Daily Trip Management</Text>
-      <Text style={[type.small, { marginBottom: 14 }]}>Start and complete your trips for all passengers at once</Text>
+      <Text style={[type.h1, { marginBottom: 12 }]}>Trips</Text>
 
       <Card style={styles.stats}>
-        <Stat icon="calendar-outline" value={todayTrips.length} label="Today" />
-        <Stat icon="time-outline" value={count(["IN_PROGRESS", "STARTED"])} label="In Progress" tint={colors.warning} />
-        <Stat icon="checkmark-circle-outline" value={count(["COMPLETED"])} label="Completed" tint={colors.success} />
+        <Stat value={todayTrips.length} label="Today" />
+        <Stat value={count(["IN_PROGRESS", "STARTED"])} label="Live" tint={colors.warning} />
+        <Stat value={count(["COMPLETED"])} label="Done" tint={colors.success} />
       </Card>
 
       <SegTabs
@@ -82,20 +81,16 @@ export default function PartnerTrips() {
                   </Text>
                   <View style={styles.row}>
                     <Ionicons name="time-outline" size={14} color={colors.tealDark} />
-                    <Text style={type.small}>{t.startTime}</Text>
-                    <Text style={type.small}>{"\u00B7"} {t.bookedSeats ?? 0}/{t.totalSeats ?? 0} seats</Text>
+                    <Text style={type.small}>
+                      {t.startTime} {"\u00B7"} {passengers} passenger{passengers === 1 ? "" : "s"}
+                    </Text>
                   </View>
                   <Badge label={statusLabel(t.status)} tone={statusTone(t.status)} style={{ alignSelf: "flex-start" }} />
                 </View>
               </View>
 
-              <View style={styles.meta}>
-                <Text style={type.small}>{passengers} passenger{passengers === 1 ? "" : "s"}</Text>
-                <Text style={type.small}>{t.vehicleId?.model || t.vehicleModel || "Vehicle"}</Text>
-              </View>
-
               {st === "SCHEDULED" ? (
-                <Button title={`Start Trip (${passengers} passenger${passengers === 1 ? "" : "s"})`} icon="play" small loading={act.isPending} onPress={() => act.mutate({ id: t._id, kind: "start" })} />
+                <Button title="Start trip" icon="play" small loading={act.isPending} onPress={() => act.mutate({ id: t._id, kind: "start" })} />
               ) : st === "IN_PROGRESS" || st === "STARTED" ? (
                 <Button title="Complete Trip" icon="checkmark" small loading={act.isPending} onPress={() => act.mutate({ id: t._id, kind: "complete" })} />
               ) : null}
@@ -107,11 +102,10 @@ export default function PartnerTrips() {
   );
 }
 
-function Stat({ icon, value, label, tint = colors.tealDark }) {
+function Stat({ value, label, tint = colors.navy }) {
   return (
     <View style={{ flex: 1, alignItems: "center", gap: 2 }}>
-      <Ionicons name={icon} size={22} color={tint} />
-      <Text style={{ fontSize: 20, fontWeight: "800", color: colors.navy }}>{value}</Text>
+      <Text style={{ fontSize: 22, fontWeight: "800", color: tint }}>{value}</Text>
       <Text style={{ fontSize: 11, color: colors.muted, fontWeight: "600" }}>{label}</Text>
     </View>
   );
