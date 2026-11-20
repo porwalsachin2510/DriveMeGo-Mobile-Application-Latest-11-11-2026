@@ -33,6 +33,16 @@ import {
     adminCreateContest,
     adminUpdateContest,
     adminPickContestWinners,
+    adminSetEntryStatus,
+    getContest,
+    togglePostLike,
+    togglePostBookmark,
+    listPostComments,
+    addPostComment,
+    deleteMyPostComment,
+    adminListComments,
+    adminModerateComment,
+    adminDeleteComment,
     getMyReferrals,
     applyReferralCode,
     getProtectionPlans,
@@ -73,16 +83,26 @@ router.delete("/faqs/:id", verifyToken, checkAdminRole, adminDeleteFaq)
 // News & blog
 router.get("/posts", verifyToken, listPosts)
 router.get("/posts/admin/all", verifyToken, checkAdminRole, adminListPosts)
+router.get("/posts/admin/comments", verifyToken, checkAdminRole, adminListComments)
+router.put("/posts/admin/comments/:commentId", verifyToken, checkAdminRole, adminModerateComment)
+router.delete("/posts/admin/comments/:commentId", verifyToken, checkAdminRole, adminDeleteComment)
 router.get("/posts/admin/:id", verifyToken, checkAdminRole, adminGetPost)
 router.get("/posts/:idOrSlug", verifyToken, getPost)
 router.post("/posts", verifyToken, checkAdminRole, adminCreatePost)
 router.put("/posts/:id", verifyToken, checkAdminRole, adminUpdatePost)
 router.delete("/posts/:id", verifyToken, checkAdminRole, adminDeletePost)
+router.post("/posts/:id/like", verifyToken, togglePostLike)
+router.post("/posts/:id/bookmark", verifyToken, togglePostBookmark)
+router.get("/posts/:id/comments", verifyToken, listPostComments)
+router.post("/posts/:id/comments", verifyToken, addPostComment)
+router.delete("/posts/comments/:commentId", verifyToken, deleteMyPostComment)
 
 // Contests
 router.get("/contests", verifyToken, listContests)
 router.get("/contests/admin/all", verifyToken, checkAdminRole, adminListContests)
+router.get("/contests/:id", verifyToken, getContest)
 router.get("/contests/:id/entries", verifyToken, checkAdminRole, adminContestEntries)
+router.put("/contests/:id/entries/:entryId", verifyToken, checkAdminRole, adminSetEntryStatus)
 router.delete("/contests/:id", verifyToken, checkAdminRole, adminDeleteContest)
 router.post("/contests", verifyToken, checkAdminRole, adminCreateContest)
 router.put("/contests/:id", verifyToken, checkAdminRole, adminUpdateContest)

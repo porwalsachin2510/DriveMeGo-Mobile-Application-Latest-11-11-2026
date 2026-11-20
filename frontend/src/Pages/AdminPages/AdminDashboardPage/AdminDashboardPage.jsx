@@ -15,6 +15,7 @@ import PaymentVerification from "../AdminPaymentVerification/PaymentVerification
 import AdminVehicleApproval from "../../../Components/Admin/AdminVehicleApproval/AdminVehicleApproval";
 import AdminSettlement from "../../../Components/Admin/AdminSettlement/AdminSettlement";
 import AdminContent from "../../../Components/Admin/AdminContent/AdminContent";
+import AdminEngagement from "../../../Components/Admin/AdminContent/AdminEngagement";
 import AdminWalletManagement from "../../../Components/Admin/AdminWalletManagement/AdminWalletManagement";
 import AdminDropdownManagement from "../../../Components/Admin/AdminDropdownManagement/AdminDropdownManagement";
 import AdminManagement from "../../../Components/Admin/AdminManagement/AdminManagement";
@@ -61,6 +62,8 @@ function AdminDashboardPage() {
         return <AdminSettlement />;
       case "content":
         return <AdminContent />;
+      case "engagement":
+        return <AdminEngagement />;
       case "wallets":
         return <AdminWalletManagement />;
       case "dropdowns":

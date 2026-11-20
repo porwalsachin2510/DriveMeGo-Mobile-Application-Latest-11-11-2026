@@ -179,6 +179,12 @@ const menuConfigs = {
     },
     { id: "content", label: "Content", icon: "content", moduleKey: "content" },
     {
+      id: "engagement",
+      label: "News, Blog & Contests",
+      icon: "content",
+      moduleKey: "content",
+    },
+    {
       id: "admin-management",
       label: "Admin Management",
       icon: "adminManagement",

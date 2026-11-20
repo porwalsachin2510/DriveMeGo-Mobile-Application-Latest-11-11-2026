@@ -15,8 +15,21 @@ import {
   useNotice,
 } from "./EngagementShared";
 
+export const CATEGORY_LABELS = {
+  GENERAL: "General",
+  ANNOUNCEMENT: "Announcement",
+  SAFETY: "Safety",
+  TRAVEL_TIPS: "Travel tips",
+  OFFERS: "Offers",
+  COMMUNITY: "Community",
+  PRODUCT_UPDATE: "Product update",
+};
+
 const EMPTY = {
   type: "NEWS",
+  category: "GENERAL",
+  isFeatured: false,
+  allowComments: true,
   title: "",
   excerpt: "",
   content: "",
@@ -34,6 +47,9 @@ function PostForm({ post, onSaved, onClose, onError }) {
     editing
       ? {
           type: post.type,
+          category: post.category || "GENERAL",
+          isFeatured: !!post.isFeatured,
+          allowComments: post.allowComments !== false,
           title: post.title,
           excerpt: post.excerpt || "",
           content: post.content || "",
@@ -123,6 +139,19 @@ function PostForm({ post, onSaved, onClose, onError }) {
             <option value="BLOG">Blog</option>
           </select>
         </Field>
+        <Field label="Category">
+          <select
+            className="eng-select"
+            value={form.category}
+            onChange={set("category")}
+          >
+            {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </Field>
         <Field label="Author">
           <input
             className="eng-input"
@@ -195,6 +224,22 @@ function PostForm({ post, onSaved, onClose, onError }) {
           />
           Published (visible in the mobile app)
         </label>
+        <label className="eng-check">
+          <input
+            type="checkbox"
+            checked={form.isFeatured}
+            onChange={set("isFeatured")}
+          />
+          Feature at the top of the app feed
+        </label>
+        <label className="eng-check">
+          <input
+            type="checkbox"
+            checked={form.allowComments}
+            onChange={set("allowComments")}
+          />
+          Allow commuters to comment
+        </label>
         {!editing || !post.notifiedAt ? (
           <label className="eng-check">
             <input
@@ -214,7 +259,103 @@ function PostForm({ post, onSaved, onClose, onError }) {
   );
 }
 
+function CommentsPanel({ post, onClose, onChanged, onError }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.get("/engagement/posts/admin/comments", {
+        params: { postId: post?._id, limit: 50 },
+      });
+      setItems(res.data?.data?.items || []);
+    } catch (error) {
+      onError(errMsg(error, "Could not load comments."));
+    } finally {
+      setLoading(false);
+    }
+  }, [post, onError]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const act = async (comment, action) => {
+    setBusyId(comment._id);
+    try {
+      if (action === "delete") {
+        await api.delete(`/engagement/posts/admin/comments/${comment._id}`);
+      } else {
+        await api.put(`/engagement/posts/admin/comments/${comment._id}`, {
+          status: comment.status === "VISIBLE" ? "HIDDEN" : "VISIBLE",
+        });
+      }
+      await load();
+      onChanged();
+    } catch (error) {
+      onError(errMsg(error));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  return (
+    <Modal
+      wide
+      title={post ? `Comments on "${post.title}"` : "All comments"}
+      onClose={onClose}
+    >
+      {loading ? (
+        <div className="eng-empty">Loading comments...</div>
+      ) : !items.length ? (
+        <div className="eng-empty">No comments yet.</div>
+      ) : (
+        <ul className="eng-comment-list">
+          {items.map((c) => (
+            <li key={c._id} className="eng-comment">
+              <div className="eng-comment-head">
+                <b>{c.user?.fullName || "Commuter"}</b>
+                <small>
+                  {c.user?.email ? `${c.user.email} · ` : ""}
+                  {formatDate(c.createdAt)}
+                  {!post && c.post?.title ? ` · ${c.post.title}` : ""}
+                </small>
+                {c.status === "HIDDEN" ? (
+                  <Pill tone="warning">Hidden</Pill>
+                ) : null}
+              </div>
+              <p>{c.body}</p>
+              <div className="eng-actions">
+                <button
+                  type="button"
+                  className="eng-btn ghost small"
+                  disabled={busyId === c._id}
+                  onClick={() => act(c, "toggle")}
+                >
+                  {c.status === "VISIBLE" ? "Hide" : "Show"}
+                </button>
+                <button
+                  type="button"
+                  className="eng-btn danger-ghost small"
+                  disabled={busyId === c._id}
+                  onClick={() => act(c, "delete")}
+                >
+                  Delete
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Modal>
+  );
+}
+
 function AdminPosts() {
+  const [stats, setStats] = useState(null);
+  const [commentsFor, setCommentsFor] = useState(null);
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
@@ -247,6 +388,7 @@ function AdminPosts() {
           nextPage > 1 ? [...prev, ...(data.items || [])] : data.items || [],
         );
         setTotal(data.total || 0);
+        setStats(data.stats || null);
         setHasMore(!!data.hasMore);
         setPage(nextPage);
       } catch (error) {
@@ -326,6 +468,22 @@ function AdminPosts() {
   return (
     <div className="eng-wrap">
       <Notice notice={notice} />
+      {stats ? (
+        <div className="eng-stats">
+          {[
+            ["Articles", stats.posts],
+            ["Published", stats.published],
+            ["Total reads", stats.views],
+            ["Likes", stats.likes],
+            ["Comments", stats.comments],
+          ].map(([label, value]) => (
+            <div key={label} className="eng-stat">
+              <span>{label}</span>
+              <b>{Number(value || 0).toLocaleString()}</b>
+            </div>
+          ))}
+        </div>
+      ) : null}
       <div className="eng-toolbar">
         <form
           className="eng-toolbar"
@@ -359,11 +517,19 @@ function AdminPosts() {
             aria-label="Filter by status"
           >
             <option value="">All statuses</option>
-            <option value="published">Published</option>
+            <option value="published">Live</option>
+            <option value="scheduled">Scheduled</option>
             <option value="draft">Drafts</option>
           </select>
         </form>
         <span className="grow" />
+        <button
+          type="button"
+          className="eng-btn ghost"
+          onClick={() => setCommentsFor({})}
+        >
+          All comments
+        </button>
         <button
           type="button"
           className="eng-btn primary"
@@ -388,6 +554,7 @@ function AdminPosts() {
                 <th>Article</th>
                 <th>Type</th>
                 <th>Status</th>
+                <th>Engagement</th>
                 <th>Publish date</th>
                 <th aria-label="Actions" />
               </tr>
@@ -403,8 +570,16 @@ function AdminPosts() {
                         <span className="thumb" />
                       )}
                       <div>
-                        <b>{post.title}</b>
-                        <small>{post.author}</small>
+                        <b>
+                          {post.title}
+                          {post.isFeatured ? (
+                            <Pill tone="warning">Featured</Pill>
+                          ) : null}
+                        </b>
+                        <small>
+                          {post.author} ·{" "}
+                          {CATEGORY_LABELS[post.category] || "General"}
+                        </small>
                       </div>
                     </div>
                   </td>
@@ -414,6 +589,12 @@ function AdminPosts() {
                     </Pill>
                   </td>
                   <td>{statusPill(post)}</td>
+                  <td>
+                    <small className="eng-metrics">
+                      {post.views || 0} reads · {post.likeCount || 0} likes ·{" "}
+                      {post.commentCount || 0} comments
+                    </small>
+                  </td>
                   <td>{formatDate(post.publishedAt)}</td>
                   <td>
                     <div className="eng-actions">
@@ -430,6 +611,13 @@ function AdminPosts() {
                         onClick={() => openEditor(post)}
                       >
                         Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="eng-btn ghost small"
+                        onClick={() => setCommentsFor(post)}
+                      >
+                        Comments
                       </button>
                       <button
                         type="button"
@@ -466,6 +654,14 @@ function AdminPosts() {
           post={editing}
           onClose={() => setEditing(null)}
           onSaved={onSaved}
+          onError={(m) => showNotice("error", m)}
+        />
+      ) : null}
+      {commentsFor ? (
+        <CommentsPanel
+          post={commentsFor._id ? commentsFor : null}
+          onClose={() => setCommentsFor(null)}
+          onChanged={() => load(1)}
           onError={(m) => showNotice("error", m)}
         />
       ) : null}

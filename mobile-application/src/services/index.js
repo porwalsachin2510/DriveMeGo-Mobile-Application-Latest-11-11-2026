@@ -118,8 +118,14 @@ export const engagementService = {
 
   posts: (params) => api.get("/engagement/posts", { params }).then(unwrap),
   post: (idOrSlug) => api.get(`/engagement/posts/${idOrSlug}`).then(unwrap),
+  likePost: (id) => api.post(`/engagement/posts/${id}/like`).then(unwrap),
+  bookmarkPost: (id) => api.post(`/engagement/posts/${id}/bookmark`).then(unwrap),
+  postComments: (id, params) => api.get(`/engagement/posts/${id}/comments`, { params }).then(unwrap),
+  addComment: (id, body) => api.post(`/engagement/posts/${id}/comments`, { body }).then(unwrap),
+  deleteComment: (commentId) => api.delete(`/engagement/posts/comments/${commentId}`).then(unwrap),
 
-  contests: () => api.get("/engagement/contests").then(unwrap),
+  contests: (params) => api.get("/engagement/contests", { params }).then(unwrap),
+  contest: (id) => api.get(`/engagement/contests/${id}`).then(unwrap),
   joinContest: (id, payload) => api.post(`/engagement/contests/${id}/join`, payload).then(unwrap),
 
   referrals: () => api.get("/engagement/referrals").then(unwrap),
